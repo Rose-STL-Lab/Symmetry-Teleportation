@@ -1,6 +1,4 @@
-"""Applying symmetry teleportation to optimize the 2-variable Rosenbrock function.
-
-"""
+"""Applying symmetry teleportation to optimize the 2-variable Rosenbrock function. """
 
 import numpy as np
 from matplotlib import pyplot as plt

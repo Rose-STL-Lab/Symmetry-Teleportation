@@ -1,13 +1,11 @@
-"""Group actions and teleportation algorithms for SO(2) and GL_n(R).
-
-"""
+"""Group actions and teleportation algorithms for SO(2) and GL_n(R). """
 
 import numpy as np
 import torch
 from torch import nn
 
 def group_action_SO2(x, y, g, xy_to_uv, uv_to_xy):
-    """SO(2) group action on 2D vector.
+    """SO(2) group action on a 2D vector.
 
     Args:
         x: A scalar. First element of the vector acted on.
@@ -26,6 +24,7 @@ def group_action_SO2(x, y, g, xy_to_uv, uv_to_xy):
     u = u_v[0]
     v = u_v[1]
     return uv_to_xy(u, v)
+
 
 def teleport_SO2(x, y, xy_to_uv, uv_to_xy, loss_func, lr_theta):
     """Teleportation on a function with SO(2) symmetry.
@@ -62,6 +61,7 @@ def teleport_SO2(x, y, xy_to_uv, uv_to_xy, loss_func, lr_theta):
     y = torch.tensor(gy.detach().numpy(), requires_grad=True)
     return x, y
 
+
 def group_action_MLP(U, V, X, X_inv, T, sigma=nn.LeakyReLU(0.1), sigma_inv=nn.LeakyReLU(10)):
     """GL(R) group actions on a pair of matrices.
 
@@ -90,11 +90,9 @@ def group_action_MLP(U, V, X, X_inv, T, sigma=nn.LeakyReLU(0.1), sigma_inv=nn.Le
     V_out = torch.matmul(V_out, X_inv)
     return U_out, V_out
 
-def teleport_MLP(W_list, X, Y, lr_teleport, dim, loss_func, step=10, sigma=nn.LeakyReLU(0.1)):
-    """GL(R) group actions on a pair of matrices.
 
-    Performs the group action in equation (8) in https://arxiv.org/pdf/2205.10637.pdf.
-    U = W_m, V = W_{m-1}, X = h_{m-2}
+def teleport_MLP(W_list, X, Y, lr_teleport, dim, loss_func, step=10, sigma=nn.LeakyReLU(0.1)):
+    """Teleportation on weight matrices in a multi-layer neural network.
 
     Args:
         W_list: list of matrices.
@@ -109,7 +107,7 @@ def teleport_MLP(W_list, X, Y, lr_teleport, dim, loss_func, step=10, sigma=nn.Le
         sigma: Element-wise activation function.
 
     Returns:
-        W_list: Result of g acting on each pair of consecutive weights in W_list. 
+        W_list: Teleported weights. Same shapes as the input W_list.
     """
     X_inv = torch.linalg.pinv(X)
 

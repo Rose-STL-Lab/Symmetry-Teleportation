@@ -1,6 +1,4 @@
-"""Applying symmetry teleportation to optimize the Booth function.
-
-"""
+"""Applying symmetry teleportation to optimize the Booth function. """
 
 import numpy as np
 from matplotlib import pyplot as plt

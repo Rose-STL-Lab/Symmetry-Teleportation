@@ -1,6 +1,4 @@
-"""Applying symmetry teleportation to optimize a multi-layer neural network.
-
-"""
+"""Applying symmetry teleportation to optimize a multi-layer neural network. """
 
 import numpy as np
 from matplotlib import pyplot as plt
