@@ -11,19 +11,19 @@ Existing gradient-based optimization methods update parameters locally, in a dir
 
 
 ## Optimizing with teleportation
-Rosenbrock function.
+Rosenbrock function:
 
 ```
 python rosenbrock.py
 ```
 
-Booth function.
+Booth function:
 
 ```
 python booth.py
 ```
 
-Multi-layer neural network.
+Multi-layer neural network:
 
 ```
 python multi_layer_regression.py
@@ -34,9 +34,9 @@ Training curves and visualizations are saved in the directory `figures`.
 ## Cite
 ```
 @article{zhao2022symmetry,
-title={Symmetry Teleportation for Accelerated Optimization},
-author={Bo Zhao and Nima Dehmamy and Robin Walters and Rose Yu},
-journal={Neural Information Processing Systems},
-year = {2022}
+  title={Symmetry Teleportation for Accelerated Optimization},
+  author={Bo Zhao and Nima Dehmamy and Robin Walters and Rose Yu},
+  journal={Neural Information Processing Systems},
+  year = {2022}
 }
 ```
