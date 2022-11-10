@@ -62,7 +62,7 @@ def teleport_SO2(x, y, xy_to_uv, uv_to_xy, loss_func, lr_theta):
     return x, y
 
 
-def group_action_MLP(U, V, X, X_inv, T, sigma=nn.LeakyReLU(0.1), sigma_inv=nn.LeakyReLU(10)):
+def group_action_MLP_two_layer(U, V, X, X_inv, T, sigma=nn.LeakyReLU(0.1), sigma_inv=nn.LeakyReLU(10)):
     """GL(R) group actions on a pair of matrices.
 
     Performs the group action in equation (8) in https://arxiv.org/pdf/2205.10637.pdf.
@@ -91,11 +91,37 @@ def group_action_MLP(U, V, X, X_inv, T, sigma=nn.LeakyReLU(0.1), sigma_inv=nn.Le
     return U_out, V_out
 
 
-def teleport_MLP(W_list, X, Y, lr_teleport, dim, loss_func, step=10, sigma=nn.LeakyReLU(0.1)):
-    """Teleportation on weight matrices in a multi-layer neural network.
+def group_action_MLP(W_list, X, X_inv, T, sigma=nn.LeakyReLU(0.1), sigma_inv=nn.LeakyReLU(10)):
+    """ GL(R) group actions on all layers in an MLP.
 
     Args:
-        W_list: list of matrices.
+        W_list: list of weight matrices.
+        X: Data matrix, with dimension a x b. 
+        X_inv: Matrix with dimension n x m. Inverse of X.
+        T: list of Lie algebra elements used to transform the weight matrices
+
+    Returns:
+        W_list: Teleported weights. Same shapes as the input W_list.
+    """
+    gW_list = W_list.copy()
+    h = X
+    h_inv = X_inv
+    h_inv_list = [h_inv]
+    for m in range(0, len(W_list)-1):
+        W_list[m+1], W_list[m] = group_action_MLP_two_layer(W_list[m+1], W_list[m], h, h_inv, T[m])
+        
+        h = sigma(torch.matmul(gW_list[m], h))
+        h_inv = torch.linalg.pinv(h)
+        h_inv_list.append(h_inv)
+
+    return W_list
+
+
+def teleport_MLP(W_list, X, Y, lr_teleport, dim, loss_func, step=10, sigma=nn.LeakyReLU(0.1)):
+    """Teleportation on weight matrices in a multi-layer neural network, using gradient ascent.
+
+    Args:
+        W_list: list of weight matrices.
         X: Data matrix, with dimension a x b. 
         Y: Label matrix, with dimension c x b.
         lr_teleport: A scalar. Learning rate used in optimizing the group element.
@@ -112,34 +138,32 @@ def teleport_MLP(W_list, X, Y, lr_teleport, dim, loss_func, step=10, sigma=nn.Le
     X_inv = torch.linalg.pinv(X)
 
     for teleport_step in range(step):
+        # populate gW_list with (I+T).W, where T=0
         gW_list = W_list.copy()
         T = []
         h = X
         h_inv = X_inv
         for m in range(0, len(gW_list)-1):
             T.append(torch.zeros(dim[m+2], dim[m+2], requires_grad=True))
-            gW_list[m+1], gW_list[m] = group_action_MLP(gW_list[m+1], gW_list[m], h, h_inv, T[m])
+            gW_list[m+1], gW_list[m] = group_action_MLP_two_layer(gW_list[m+1], gW_list[m], h, h_inv, T[m])
             h = sigma(torch.matmul(gW_list[m], h))
             h_inv = torch.linalg.pinv(h)
 
+        # compute L(T.W) and dL/d(T.W)
         L = loss_func(gW_list, X, Y)
-
         dL_dW_list = torch.autograd.grad(L, inputs=gW_list, create_graph=True)
+
+        # compute dL/dt=||dL/d(T.W)||^2 and d/dT dL/dt
         dL_dt = 0
         for i in range(len(gW_list)):
             dL_dt += torch.norm(dL_dW_list[i])**2 
         dLdt_dT_list = torch.autograd.grad(dL_dt, inputs=T)
+
+        # gradient ascent step on T, in the direction of d/dT dL/dt
         for i in range(len(T)):
             T[i] = T[i] + lr_teleport * dLdt_dT_list[i]
 
-        h = X
-        h_inv = X_inv
-        h_inv_list = [h_inv]
-        for m in range(0, len(W_list)-1):
-            W_list[m+1], W_list[m] = group_action_MLP(W_list[m+1], W_list[m], h, h_inv, T[m])
-            
-            h = sigma(torch.matmul(gW_list[m], h))
-            h_inv = torch.linalg.pinv(h)
-            h_inv_list.append(h_inv)
+        # replace original W's with T.W, using the new T's
+        W_list = group_action_MLP(W_list, X, X_inv, T)
 
     return W_list
